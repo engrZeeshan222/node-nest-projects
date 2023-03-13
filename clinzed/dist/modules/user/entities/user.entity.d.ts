@@ -1,0 +1,31 @@
+import { CreditCard } from 'src/modules/credit-card/entities/credit-card.entity';
+import { CustomerCar } from 'src/modules/customer-car/entities/customer-car.entity';
+import { MessageThread } from 'src/modules/message-thread/entities/message-thread.entity';
+import { Message } from 'src/modules/messages/entities/message.entity';
+import { Property } from 'src/modules/property/entities/property.entity';
+import { UserSetting } from 'src/modules/user-settings/entities/user-setting.entity';
+export declare class User {
+    id: number;
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    stripeAccountId: string;
+    status: string;
+    role: string;
+    provider: string;
+    googleId: string;
+    facebookId: string;
+    userSetting: UserSetting;
+    creditCard: CreditCard[];
+    customerCar: CustomerCar[];
+    Property: Property[];
+    hostMessage: MessageThread[];
+    customerMessage: MessageThread[];
+    userMessage: Message[];
+    lastCustomerLogin: Date;
+    lastHostLogin: Date;
+    createdAt: Date;
+    updatedAt: Date;
+}

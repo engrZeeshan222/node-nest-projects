@@ -1,0 +1,94 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import * as request from 'supertest';
+import { AuthModule } from '../src/modules/auth/auth.module';
+import { UsersService } from '../src/modules/user/user.service';
+import { MailService } from '@sendgrid/mail';
+import { JwtService } from '@nestjs/jwt';
+
+describe('AuthController (e2e)', () => {
+  let app: INestApplication;
+  const mockUsersService = {}
+  const mockJwtService = {}
+  const mockMailService = {}
+
+  beforeAll(async () => {
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [AuthModule],
+    })
+    .overrideProvider(UsersService).useValue(mockUsersService)
+    .overrideProvider(JwtService).useValue(mockJwtService)
+    .overrideProvider(MailService).useValue(mockMailService)
+    .compile();
+
+    app = moduleRef.createNestApplication();
+    app.setGlobalPrefix('api/v1');
+    await app.init();
+
+  });
+  afterAll(async ()=>{
+      await app.close();
+  })
+describe('ApiEndPoints', async () => {
+  //1
+  it.only('/auth/login', async () => {
+    const loginUserToSend = {
+       "email": "tubazaidi44@gmail.com",
+       "password": "12345",
+       "isHost":true
+    }
+    const res = await request(app.getHttpServer())                   
+      .post('api/v1/auth/login')  
+      .send(loginUserToSend) ; 
+      expect(res).toBe(200);
+  });
+  //2
+  it('/auth/signup', () => {
+    return request(app.getHttpServer())                  // Send 
+      .post('/auth/signup')  //method& route path
+      .send({})    // body data
+      .expect(200)  // response status                   // assertions
+      .expect('Hello World!');
+  });
+  //3
+  it('/auth/google', () => {
+    return request(app.getHttpServer())                  // Send 
+      .post('/auth/google')  //method& route path
+      .send({})    // body data
+      .expect(200)  // response status                   // assertions
+      .expect('Hello World!');
+  });
+  //4
+  it('/auth/facebook', () => {
+    return request(app.getHttpServer())                  // Send 
+      .post('/auth/facebook')  //method& route path
+      .send({})    // body data
+      .expect(200)  // response status                   // assertions
+      .expect('Hello World!');
+  });
+  //5
+  it('/auth/varify', () => {
+    return request(app.getHttpServer())                  // Send 
+      .get('/auth/varify')  //method& route path
+      .send({})    // body data
+      .expect(200)  // response status                   // assertions
+      .expect('Hello World!');
+  });
+  //6
+  it('/auth/forgot-password', () => {
+    return request(app.getHttpServer())                  // Send 
+      .post('/auth/forgot-password')  //method& route path
+      .send({})    // body data
+      .expect(200)  // response status                   // assertions
+      .expect('Hello World!');
+  });
+  it('/auth/reset-password/:token', () => {
+    return request(app.getHttpServer())                  // Send 
+      .patch('/auth/reset-password/:token')  //method& route path
+      .send({})    // body data
+      .expect(200)  // response status                   // assertions
+      .expect('Hello World!');
+  });
+ });
+
+});

@@ -1,0 +1,5 @@
+version: '3.6'
+services:
+  postgres-user-profile:
+    image: postgres:12-alpine
+    restart: unless-stopped

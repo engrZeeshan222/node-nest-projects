@@ -1,0 +1,670 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+generator erd {
+    provider = "prisma-erd-generator"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// This is the user information
+model User {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    email     String      @unique
+    role      ROLES       @default(USER)
+    firstName String
+    lastName  String
+    phone     String
+    stripeId  String
+    referId   String      @unique
+    status    USER_STATUS @default(PENDING)
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+
+    UsedCredit      UsedCredit[]
+    UserCredit      UserCredit[]
+    UserCoupon      UserCoupon[]
+    couponCondition CouponCondition[]
+    ChargerProfile  ChargerProfile?
+    CustomerProfile CustomerProfile?
+    SearchHistory   SearchHistory[]
+    CreditCard      CreditCard[]
+    UserSettings    UserSettings[]
+    Referral        Referral?         @relation("UserReferral")
+    UsersReferred   Referral[]        @relation("UsersReferred")
+}
+
+// This is the charger information. Each user will automatically have a ChargerProfile
+model ChargerProfile {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    userId Int  @unique
+    user   User @relation(fields: [userId], references: [id])
+
+    Messages          Messages[]
+    Property          Property[]
+    ReservationReview ReservationReview[]
+    DirectDeposit     DirectDeposit[]
+    Payouts           Payouts[]
+}
+
+// This is the customer information. Each user will automatically have a CustomerProfile
+model CustomerProfile {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    favoritePropertyId Int
+    property           Property @relation(fields: [favoritePropertyId], references: [id])
+
+    Reservation Reservation[]
+
+    userId Int  @unique
+    user   User @relation(fields: [userId], references: [id])
+
+    Messages          Messages[]
+    CustomerCar       CustomerCar[]
+    ReservationReview ReservationReview[]
+}
+
+model UserSettings {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    userId Int  @unique
+    user   User @relation(fields: [userId], references: [id])
+
+    isHostView Boolean @default(false)
+}
+
+model Referral {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    referId String
+
+    userId Int  @unique
+    user   User @relation(fields: [userId], references: [id], name: "UserReferral")
+
+    referredUsersId Int
+    referredUsers   User @relation(fields: [referredUsersId], references: [id], name: "UsersReferred")
+}
+
+// This is the basic address schema. Can be used for anything needing an address
+model Address {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    // latLong
+    address String
+    city    String
+    state   String
+    zip     String
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+
+    Property Property[]
+}
+
+// The charger will be able to make direct deposits to their bank account. This stores the information needed to make that transfer.
+model DirectDeposit {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    chargerProfileId Int
+    chargerProfile   ChargerProfile @relation(fields: [chargerProfileId], references: [id])
+
+    lastDigits String
+    status     DIRECT_DEPOSIT_STATUS @default(PENDING)
+    notes      String
+    Payouts    Payouts[]
+}
+
+// This keeps the history of all payouts initiated
+model Payouts {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    chargerProfileId Int
+    chargerProfile   ChargerProfile @relation(fields: [chargerProfileId], references: [id])
+
+    directDepositId Int
+    directDeposit   DirectDeposit @relation(fields: [directDepositId], references: [id])
+
+    dateInitiated DateTime
+    dateCompleted DateTime?
+
+    status  PAYOUT_STATUS
+    message String?
+}
+
+// This is internal notes. The customer side will never see these
+model InternalNote {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    messageBody String
+
+    Address         Address[]
+    User            User[]
+    UsedCredit      UsedCredit[]
+    UserCredit      UserCredit[]
+    Reservation     Reservation[]
+    Property        Property[]
+    Cost            Cost[]
+    CouponCondition CouponCondition[]
+}
+
+// This is the credit card the users will have so that we can charge them. No sensitive information is stored
+model CreditCard {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    title          String
+    type           CARD_TYPE
+    lastFourDigits String
+    expDate        String
+    zipCode        String
+    stripeCardId   String
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id])
+
+    Reservation Reservation[]
+}
+
+// This keeps track of all the credit a user used
+model UsedCredit {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id])
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+
+    amount Decimal
+}
+
+// This keeps track of the amount of credit a user has
+model UserCredit {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id])
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+
+    amount      Decimal
+    expDate     DateTime
+    Reservation Reservation[]
+}
+
+// This is the property a charger lists
+model Property {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    title            String
+    description      String?
+    guestInsructions String?
+    status           PROPERTY_STATUS @default(LISTED)
+    costPerMinute    Decimal
+    widthInch        Decimal
+    lengthInch       Decimal
+    heightInch       Decimal? // == null for no rooftops
+    carCount         Int
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+
+    addressId Int
+    address   Address @relation(fields: [addressId], references: [id])
+
+    chargerProfileId Int
+    ChargerProfile   ChargerProfile @relation(fields: [chargerProfileId], references: [id])
+
+    Reservation            Reservation[]
+    photos                 Photo[]
+    CustomerProfile        CustomerProfile[]
+    CalendarUnavailability CalendarUnavailability[]
+}
+
+// This keeps track of all recurring unavailbility the charger has
+model CalendarRecurringUnavailability {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    start  DateTime // Recurring start time. Doesn't mean it's unavailable from this start time.
+    end    DateTime
+    status UNAVAILABILITY_STATUS @default(ACTIVE)
+
+    CalendarUnavailability CalendarUnavailability[]
+}
+
+// This keeps track of all unavailbility the charger has
+// https://stackoverflow.com/a/41134923/4861207
+model CalendarUnavailability {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    title  String
+    start  DateTime
+    end    DateTime
+    status UNAVAILABILITY_STATUS @default(ACTIVE)
+
+    propertyId Int
+    property   Property @relation(fields: [propertyId], references: [id])
+
+    calendarRecurringUnavailabilityId Int?
+    calendarRecurringUnavailability   CalendarRecurringUnavailability? @relation(fields: [calendarRecurringUnavailabilityId], references: [id])
+}
+
+// This is the schema for any photos
+model Photo {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    photoKey String
+    status   PHOTO_STATUS @default(ACTIVE)
+
+    propertyId        Int
+    Property          Property[]
+    ReservationReview ReservationReview[]
+    ChargerType       ChargerType[]
+}
+
+// This is for any reservations or bookings created by customers
+model Reservation {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    reservationPublicId String
+
+    customerProfileId Int
+    CustomerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
+
+    status RESERVATION_STATUS
+
+    propertyId Int
+    property   Property @relation(fields: [propertyId], references: [id])
+
+    paymentStatus PAYMENT_STATUS
+    paymentIssue  String
+
+    costId Int
+    Cost   Cost @relation(fields: [costId], references: [id])
+
+    reservationStart DateTime
+    reservatinEnd    DateTime
+    start            DateTime
+    end              DateTime
+
+    creditCardId Int
+    CreditCard   CreditCard @relation(fields: [creditCardId], references: [id])
+
+    userCreditId Int?
+    UserCredit   UserCredit? @relation(fields: [userCreditId], references: [id])
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+
+    ReservationPay    ReservationPay?
+    ReservationReview ReservationReview?
+    ChangeRequest     ChangeRequest[]
+}
+
+// This lets the host review the customer and the customer to review the host
+model ReservationReview {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    reviewdByChargerProfileId Int?
+    ChargerProfile            ChargerProfile? @relation(fields: [reviewdByChargerProfileId], references: [id])
+
+    reviewdByCustomerProfileId Int?
+    CustomerProfile            CustomerProfile? @relation(fields: [reviewdByCustomerProfileId], references: [id])
+
+    reservationId Int         @unique
+    Reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+    rating   Int
+    comments String?
+
+    photos Photo[]
+}
+
+// This is the reservation cost information
+model Cost {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    costPerMinute          Decimal
+    overtimePricePerMinute Decimal
+
+    customerPlatformFee Decimal
+    chargerPlatformFee  Decimal
+    otherCost           Decimal
+    overtimeTotalCost   Decimal
+    tax                 Decimal
+    totalPrice          Decimal
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+
+    userCouponId Int
+    UserCoupon   UserCoupon @relation(fields: [userCouponId], references: [id])
+
+    Reservation Reservation[]
+}
+
+// This is the coupon information which a user added to their account
+model UserCoupon {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id])
+
+    activatedOn DateTime
+    usedOn      DateTime
+
+    couponId Int
+    Coupon   Coupon @relation(fields: [couponId], references: [id])
+
+    Cost Cost[]
+}
+
+// This is the available coupons
+model Coupon {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    title      String
+    code       String
+    percentOff Int?
+    priceOff   Int?
+
+    couponConditionId Int
+    CouponCondition   CouponCondition @relation(fields: [couponConditionId], references: [id])
+
+    UserCoupon UserCoupon[]
+}
+
+// This is the conditions a coupon must have in order for a user to apply it to their account
+model CouponCondition {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    description String
+
+    validForUserIds User[]
+    userRole        ROLES[]
+
+    expDate DateTime
+
+    // latLong
+
+    internalNoteId Int
+    internalNote   InternalNote @relation(fields: [internalNoteId], references: [id])
+    Coupon         Coupon[]
+}
+
+// This keeps track and validates changes of a reservation
+model ChangeRequest {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    reservationId Int         @unique
+    Reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+    startDate     DateTime
+    endDate       DateTime
+    customerNotes String?
+    hostNotes     String?
+    didApprove    Boolean?
+}
+
+// This keeps track of the details for when a customer pays the host
+model ReservationPay {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    reservationId Int         @unique
+    Reservation   Reservation @relation(fields: [reservationId], references: [id])
+
+    onDate DateTime
+    amount Decimal
+}
+
+// This keeps track of all messages
+model Messages {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    customerProfileId Int
+    CustomerProfile   CustomerProfile @relation(fields: [customerProfileId], references: [id])
+
+    chargerProfileId Int
+    ChargerProfile   ChargerProfile @relation(fields: [chargerProfileId], references: [id])
+
+    message  String
+    dateSent DateTime
+    isRead   Boolean
+}
+
+// This keeps track of the location search history
+model SearchHistory {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    searchQuery String
+
+    userId Int
+    user   User @relation(fields: [userId], references: [id])
+}
+
+// This is the cars the customer adds
+model CustomerCar {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    customerProfileId Int
+    customer          CustomerProfile @relation(fields: [customerProfileId], references: [id])
+
+    carModelId Int
+    carModel   CarModel @relation(fields: [carModelId], references: [id])
+
+    carYearId Int
+    carYear   CarYear @relation(fields: [carYearId], references: [id])
+
+    carColorId Int
+    carColor   CarColor @relation(fields: [carColorId], references: [id])
+
+    title        String
+    licensePlate String
+    status       CUSTOMER_CAR_STATUS @default(ACTIVE)
+    
+}
+
+// This is a list of the chargers we accept
+model ChargerType {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    title   String @unique
+    photoId Int
+    photo   Photo  @relation(fields: [photoId], references: [id])
+
+    CarYear CarYear[]
+}
+
+// Read about db design for cars here: https://dba.stackexchange.com/a/35039
+// This is a list of the car makes we have. (ex Toyota)
+model CarMake {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    make     String
+    CarModel CarModel[]
+}
+
+// This is a list of the car models we have of a specific CarMake. (ex. Camry)
+model CarModel {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    carMakeId Int
+    carMake   CarMake @relation(fields: [carMakeId], references: [id])
+
+    model       String
+    CarYear     CarYear[]
+    CarColor    CarColor[]
+    CustomerCar CustomerCar[]
+}
+
+// This is a list of the car years we have for a CarModel
+model CarYear {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    carModelId Int
+    carModel   CarModel @relation(fields: [carModelId], references: [id])
+
+    chargerTypeId Int
+    chargerType   ChargerType @relation(fields: [chargerTypeId], references: [id])
+
+    year        String
+    CustomerCar CustomerCar[]
+}
+
+// This is a list of all the car colors we have of a CarYear and CarMake
+model CarColor {
+    id        Int      @id @default(autoincrement())
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    carModelId Int
+    carModel   CarModel @relation(fields: [carModelId], references: [id])
+
+    year        String
+    CustomerCar CustomerCar[]
+}
+
+enum ROLES {
+    ADMIN
+    USER
+}
+
+enum USER_STATUS {
+    PENDING
+    APPROVED
+    PAUSED
+    BANNED
+    DELETED
+}
+
+enum RESERVATION_STATUS {
+    PENDING
+    IN_PROGRESS
+    RESERVED
+    DONE
+    CHANGE_REQUEST_CHARGER
+    CHANGE_REQUEST_CUSTOMER
+    CANCELED_CHARGER
+    CANCELED_CUSTOMER
+    CANCELED_ADMIN
+}
+
+enum PROPERTY_STATUS {
+    PENDING
+    LISTED
+    PAUSED
+    BANNED
+    DELETED
+}
+
+enum UNAVAILABILITY_STATUS {
+    ACTIVE
+    DELETED
+}
+
+enum CUSTOMER_CAR_STATUS {
+    ACTIVE
+    DELETED
+}
+
+enum PHOTO_STATUS {
+    ACTIVE
+    DELETED
+}
+
+enum PAYOUT_STATUS {
+    PENDING
+    IN_PROGRESS
+    DONE
+    ERROR
+}
+
+// Need to get these from stripe
+enum DIRECT_DEPOSIT_STATUS {
+    PENDING
+    IN_PROGRESS
+    DONE
+    ERROR
+}
+
+enum PAYMENT_STATUS {
+    False
+    IN_PROGRESS
+    DONE
+    ISSUE
+}
+
+enum CARD_TYPE {
+    VISA
+    MASTERCARD
+    DEBIT
+}

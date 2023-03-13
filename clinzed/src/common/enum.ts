@@ -1,0 +1,40 @@
+export enum Role {
+  USER = 'USER',
+  ADMIN = 'ADMIN',
+}
+export enum UserStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  PAUSED = 'PAUSED',
+  BANNED = 'BANNED',
+  DELETED = 'DELETED',
+}
+export enum CUSTOMER_CAR_STATUS {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+}
+export enum PHOTO_STATUS {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+}
+export enum CARD_TYPE {
+  VISA = 'VISA',
+  MASTERCARD = 'MASTERCARD',
+  DEBIT = 'DEBIT',
+}
+
+export enum COMMON_STATUS {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+}
+export enum CARD_STATUS {
+  ACTIVE = 'ACTIVE',
+  DELETED = 'DELETED',
+}
+export enum PROPERTY_STATUS {
+  PENDING = 'PENDING',
+  LISTED = 'LISTED',
+  PAUSED = 'PAUSED',
+  BANNED = 'BANNED',
+  DELETED = 'DELETED',
+}
